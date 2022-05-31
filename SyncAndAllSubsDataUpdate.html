@@ -1,0 +1,57 @@
+<script runat="server">
+    Platform.Load("core", "1.1.1");
+try {
+​
+    var deKey = "External Key of DE",  // replace with the external key of the DE holding the query results
+        prox = new Script.Util.WSProxy(),
+        objectType = "DataExtensionObject[" + deKey + "]",
+        cols = ["Id", "Email"],
+        moreData = true,
+        reqID = null,
+        numItems = 0;
+    
+    while (moreData) {
+        moreData = false;
+        var data = reqID == null ?
+            prox.retrieve(objectType, cols) :
+            prox.getNextBatch(objectType, reqID);
+            
+​
+        if (data != null) {
+            moreData = data.HasMoreRows;
+            reqID = data.RequestID;
+            if (data && data.Results) {
+​
+                for (var i = 0; i < data.Results.length; i++) {
+                    var subkey = data.Results[i].Properties[0].Value;
+                    var email = data.Results[i].Properties[1].Value;
+                        
+                    Write("subskey = "+subkey+"<br>");
+                    Write("email id = "+email+"<br>");
+                    
+                    var sub = {
+                        SubscriberKey: subkey,
+                        EmailAddress: email,
+                        Lists: [{
+                            ID: 'ListID',
+                            Status: 'Active'
+                        }]
+                    };
+                    var options = {
+                        SaveOptions: [{
+                          PropertyName: "*",
+                          SaveAction: "UpdateAdd"
+                        }]
+                    };
+                    var resp = prox.createItem("Subscriber", sub, options);
+                    Write("Response: " + Stringify(resp));
+                    
+                }
+            }
+        }
+    }
+​
+} catch (e) {
+Write(Stringify(e));
+} 
+</script>  
