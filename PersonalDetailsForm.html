@@ -1,0 +1,158 @@
+%%[
+SET @Submit = RequestParameter("Submit")
+IF @Submit != "Success" THEN
+]%%
+<h2>Personal Details:</h2>
+<form action="%%=RequestParameter('PAGEURL')=%%" method="GET">
+<label class="control-label">Email</label>
+              <input  type="email"
+                      required="required"
+                      class="form-control"
+                      placeholder="EMAIL"
+                      id="email"
+                      name="email">
+            </div>
+ 
+            <div class="form-group">
+              <label class="control-label">First Name</label>
+              <input type="text"
+                     required="required"
+                     class="form-control"
+                     placeholder="First Name"
+                     id="firstname"
+                     name="firstname">
+            </div>
+            <div class="form-group">
+              <label class="control-label">Last Name</label>
+              <input  type="text"
+                      required="required"
+                      class="form-control"
+                      placeholder="Last Name"
+                      id="lastname"
+                      name="lastname">
+            </div>
+            
+            <div class="form-group">
+              <label class="control-label">Company Name</label>
+              <input type="text"
+                     required="required"
+                     class="form-control"
+                     placeholder="Company Name"
+                     id="companyname"
+                     name="companyname">
+            </div>
+            <div class="form-group">
+              <label class="control-label">Proficiency</label>
+              <input  type="text"
+                      required="required"
+                      class="form-control"
+                      placeholder=""
+                      id="proficiency"
+                      name="proficiency">
+            </div>
+<button type="submit" name="Submit" id="Submit" value="Success">Submit</button>
+</form>
+%%[
+ENDIF
+]%%
+%%[
+SET @email = RequestParameter("email")
+IF @email != "" THEN
+]%%
+
+<!-- fire entry event script placeholder -->
+
+<script runat="server"> 
+    Platform.Load("Core", "1");
+    
+    // get access token by passing payload
+    function getAccessToken(){
+    
+        var clientId, clientSecret, accountId, tenantId;
+    
+        var dataRows = Platform.Function.LookupRows('APIPackageDetails','CredName','APIB');
+        
+        if(dataRows && dataRows.length > 0) {
+    
+            // Write("Integration Credentials found. Retriveing Access token..."+"<br><br>");
+            clientId = dataRows[0]["ClientId"];
+            clientSecret = dataRows[0]["ClientSecret"];
+            accountId = dataRows[0]["AccountId"].replace(/ /g,'');
+            tenantId = dataRows[0]["TenantId"];
+    
+            var payload = '{"grant_type": "client_credentials","client_id": "'+clientId+'","client_secret": "'+clientSecret+'","account_id": "'+accountId+'"}';
+            var authurl = 'https://'+tenantId+'.auth.marketingcloudapis.com/v2/token';
+            var contentType = 'application/json';
+    
+            var response = HTTP.Post(authurl, contentType, payload);
+            // Write("REST API Access Token Request:"+"<br>");
+            //Write("Status Code: "+response.StatusCode+"<br>");
+            //Write("Response: "+response.Response+"<br><br>");
+    
+            return Platform.Function.ParseJSON(response.Response[0]);
+    
+        }
+        else
+            Write("No valid integration credentials found. Please contact you administrator"+"<br><br>");
+
+    }
+    try{
+                        // Retrive access token from json response
+        var jsonresp = getAccessToken();
+        var authToken = jsonresp.access_token;
+        var restURL = jsonresp.rest_instance_url;
+        var contentType = 'application/json';
+        // Write("Access Token = "+authToken+"<br>");
+        // Write("REST URL = "+restURL+"<br><br>");
+
+        var email = Request.GetQueryStringParameter("email");
+        var firstname = Request.GetQueryStringParameter("firstname");
+        var lastname = Request.GetQueryStringParameter("lastname");
+        var companyname = Request.GetQueryStringParameter("companyname");
+        var proficiency = Request.GetQueryStringParameter("proficiency");
+
+        if (email != null && authToken != null) {
+       
+        // Write("Email entered = "+email+"<br>");
+        // Write("First Name entered = "+firstname+"<br>");
+        // Write("Last Name entered = "+lastname+"<br>");
+        // Write("Company Name entered ="+companyname+"<br>");
+        // Write("Proficiency entered ="+proficiency+"<br>");
+        
+        var headerNames = ["Authorization"];
+        var headerValues = ["Bearer " + authToken];
+        var jsonBody = {
+            "contactkey": email,
+            "EventDefinitionKey": "APIEvent-19f28a74-1414-8be1-16e2-ed8717385022",    //provide journey EVENT DEFINITION KEY
+            "Data": {
+                "contact key": email,
+                "Email": email,
+                "FirstName": firstname,
+                "LastName": lastname,
+                "CompanyName": companyname,
+                "Proficiency": proficiency
+            }
+            
+        };
+
+        // Write("Data entered in json body"+"<br>");
+
+        var requestUrl = restURL + "/interaction/v1/events";
+
+        var fireEntryEvent = HTTP.Post(requestUrl, contentType, Stringify(jsonBody), headerNames, headerValues);
+   
+      if (fireEntryEvent.StatusCode == 201) {
+        Write("Thank you for submitting");
+      }
+    };
+
+    }
+
+    catch(e){
+        Write("Exception occcured: "+e+"<br>");
+    }
+    </script>
+
+%%[
+ENDIF
+]%%
