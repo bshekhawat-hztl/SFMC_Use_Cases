@@ -1,0 +1,215 @@
+<!--Declaring Ampscript variable -->
+%%[
+var @Page1,@CookieID,@Page2
+]%%
+<!--Progressive Profile Logic Starts-->
+<script runat=server>
+ Platform.Load("Core", "1.1.1");
+ var cookie = Platform.Request.GetCookieValue("SFMCCookie"); //Get the cookie value if its present
+ Variable.SetValue("@CookieID",cookie); //Set the cookie value
+  //var cb = Variable.GetValue("@CookieID");
+   //Write("SFMC get cookie old value is =" + cb);
+ var CheckCookie = DataExtension.Init("ProgressiveProfiling"); 
+ var CheckCookieRow = CheckCookie.Rows.Lookup(["CookieID"],[cookie]); //Check if cookie is present in data extension
+ if(CheckCookieRow){
+ Variable.SetValue("@Page2","Next"); //Set the Page 2 if the cookie value is present in data extension
+ }
+ else{
+ if( !cookie || cookie == "" ) {
+ set(); //If there is no cookie set a cookie
+ } 
+ } 
+ function set() {
+ var d = new Date("Fri, 31 Dec 9999 23:59:59 GMT"); //Set a longer date so that cookies can be stored longer time
+ var today = new Date();
+ var SFMCCookieValue = "SFMCCookieValue"+today;
+ 
+
+Platform.Response.SetCookie("SFMCCookie",SFMCCookieValue,d);  //Set the cookie value
+   var cookienew = Platform.Request.GetCookieValue("SFMCCookie");
+ Variable.SetValue("@CookieID",cookienew);
+ //var cbn = Variable.GetValue("@CookieID");
+   //Write("SFMC get cookie new value is =" + cbn);
+    
+
+ 
+Variable.SetValue("@Page1","add");
+ }
+  
+</script>
+%%[
+IF RequestParameter("submitted") == "submitted" Then
+Set @Email = RequestParameter("email")
+Set @firstname = RequestParameter("firstname")
+Set @lastname = RequestParameter("lastname")
+Set @CookieID = RequestParameter("CookieID")
+set @upsertdataex = UpsertDE('ProgressiveProfiling',1,'email',@Email,'firstname',@firstname,'lastname',@lastname,'CookieID',@CookieID) //Upsert all the value in data extension 
+Set @showThankYou = "Yes"
+EndIF
+]%%
+
+%%[
+    IF RequestParameter("submittedn") == "submittedn" Then
+    Set @CookieID = RequestParameter("CookieID")
+    Set @Company = RequestParameter("CompanyName")
+    Set @Service = RequestParameter("Service")
+    Set @updatedata = UpdateData('ProgressiveProfiling',1,'CookieID',@CookieID,'CompanyName',@Company, 'Service', @Service) //Update all the value in data extension 
+    Set @showThankYounew = "Yes"
+    Set @showThankYou = "No"
+    EndIF
+    ]%%
+
+
+%%[
+If @Page2 == "Next" Then
+]%% 
+<form action="%%=RequestParameter('PAGEURL')=%%" method="POST">
+ <label for="CompanyName">Company Name</label><br>
+ <input type="text" id="CompanyName" name="CompanyName" value=""><br>
+ <label for="Service">Do you Like Our Service </label><br>
+ <input type="text" id="Service" name="Service" value=""><br>
+ <br>
+  <input id="CookieID" name="CookieID" type="hidden" value="%%=v(@CookieID)=%%">
+ <input id="submittedn" name="submittedn" type="hidden" value="submittedn">
+ <input type="submit" value="Submit">
+</form> 
+%%[EndIF]%% 
+
+%%[ If @Page1 != "add" AND @Page2 != "Next" AND @showThankYou != "Yes" Then ]%%
+Welcome Back! <br>
+<form action="%%=RequestParameter('PAGEURL')=%%" method="POST">
+ <label for="firstname">First name:</label><br>
+ <input type="text" id="firstnamet" name="firstname" value="" required="required" onkeyup='saveValueFNU(this);'><br>
+ <label for="lastname">Last name:</label><br>
+ <input type="text" id="lastnamet" name="lastname" value="" required="required" onkeyup='saveValueLNU(this);'><br>
+ <label for="email">Email:</label><br>
+ <input type="email" id="emailt" name="email" value="" required="required" onkeyup='saveValueEmailU(this);'><br>
+ <br>
+ <input id="CookieID" name="CookieID" type="hidden" value="%%=v(@CookieID)=%%">
+ <input id="submitted" name="submitted" type="hidden" value="submitted">
+ <input type="submit" value="Submit">
+</form> 
+
+<script type="text/javascript">
+    // localStorage.clear();
+  function saveValueFNU(F){
+        var idFNU = F.id;  // get the sender's id to save it . 
+        var valFNU = F.value; // get the value. 
+        localStorage.setItem(idFNU, valFNU);// Every time user writing something, the localStorage's value will override . 
+        // document.getElementById("firstnamet").value = getSavedValue(id);
+    }
+
+    function saveValueLNU(L){
+        var idLNU = L.id;  // get the sender's id to save it . 
+        var valLNU = L.value; // get the value. 
+        localStorage.setItem(idLNU, valLNU);// Every time user writing something, the localStorage's value will override . 
+        // document.getElementById("firstnamet").value = getSavedValue(id);
+    }
+
+    function saveValueEmailU(U){
+        var idEU = U.id;  // get the sender's id to save it . 
+        var valEU = U.value; // get the value. 
+        localStorage.setItem(idEU, valEU);// Every time user writing something, the localStorage's value will override . 
+        // document.getElementById("firstnamet").value = getSavedValue(id);
+    }
+
+  { 
+    if((localStorage.getItem("firstnamei") && localStorage.getItem("firstnamet")) || (!localStorage.getItem("firstnamei") && localStorage.getItem("firstnamet")))
+    {
+        document.getElementById("firstnamet").value = localStorage.getItem("firstnamet");
+    }
+        else{
+        document.getElementById("firstnamet").value = localStorage.getItem("firstnamei");
+        }
+      }
+
+  { 
+    if((localStorage.getItem("lastnamei") && localStorage.getItem("lastnamet")) || (!localStorage.getItem("lastnamei") && localStorage.getItem("lastnamet")))
+    {
+        document.getElementById("lastnamet").value = localStorage.getItem("lastnamet");
+    }
+        else{
+        document.getElementById("lastnamet").value = localStorage.getItem("lastnamei");
+        }
+      }
+  { 
+    if((localStorage.getItem("emaili") && localStorage.getItem("emailt")) || (!localStorage.getItem("emaili") && localStorage.getItem("emailt")))
+    {
+        document.getElementById("emailt").value = localStorage.getItem("emailt");
+    }
+        else{
+        document.getElementById("emailt").value = localStorage.getItem("emaili");
+        }
+
+      }
+
+                      // localStorage.clear();
+                      
+                    // function saveValue(e){
+                    //     console.log("Insidesavevalue");
+                    //     var id = e.id;  // get the sender's id to save it . 
+                    //     var val = e.value; // get the value. 
+                    //     Console.log(id);
+                    //     localStorage.setItem(id, val);// Every time user writing something, the localStorage's value will override . 
+                    //     console.log(getSavedValue(id));
+                    //     document.getElementById("firstnamet").value = getSavedValue(id);
+                    // }
+                  
+                    //get the saved value function - return the value of "v" from localStorage. 
+
+
+      function getSavedValue  (v){
+        if (!localStorage.getItem(v)) {
+            return "";// You can change this to your defualt value. 
+        }
+        return localStorage.getItem(v);
+        
+    }
+  </script>
+
+%%[EndIF]%%
+
+%%[ If @Page1 == "add" and @showThankYou != "Yes" Then ]%%
+<form action="%%=RequestParameter('PAGEURL')=%%" method="POST">
+ <label for="firstname">First name:</label><br>
+ <input type="text" id="firstnamei" name="firstname" value="" required="required" onkeyup='saveValueFN(this);'><br>
+ <label for="lastname">Last name:</label><br>
+ <input type="text" id="lastnamei" name="lastname" value="" required="required" onkeyup='saveValueLN(this);'><br>
+ <label for="email">Email:</label><br>
+ <input type="email" id="emaili" name="email" value="" required="required" onkeyup='saveValueEmail(this);'><br>
+ <br>
+ <input id="CookieID" name="CookieID" type="hidden" value="%%=v(@CookieID)=%%">
+ <input id="submitted" name="submitted" type="hidden" value="submitted">
+ <input type="submit" value="Submit">
+</form> 
+
+<script type="text/javascript">
+  
+  //Save the value function - save it to localStorage as (ID, VALUE)
+  function saveValueFN(e){
+      var idFN = e.id;  // get the sender's id to save it . 
+      var valFN = e.value; // get the value. 
+      localStorage.setItem(idFN, valFN);// Every time user writing something, the localStorage's value will override . 
+      var FN = localStorage.getItem("firstnamei");
+  }
+  function saveValueLN(v){
+      var idLN = v.id;  // get the sender's id to save it . 
+      var valLN = v.value; // get the value. 
+      localStorage.setItem(idLN, valLN);// Every time user writing something, the localStorage's value will override . 
+      var LN = localStorage.getItem("lastnamei");
+  }
+
+  function saveValueEmail(M){
+      var idE = M.id;  // get the sender's id to save it . 
+      var valE = M.value; // get the value. 
+      localStorage.setItem(idE, valE);// Every time user writing something, the localStorage's value will override . 
+      var LN = localStorage.getItem("emaili");
+  }
+  // localStorage.clear();
+</script>
+
+%%[EndIF]%%
+
+%%[ If @showThankYou == "Yes" Then ]%%
+<H2>Thank you sharing your details! </H2>
+%%[EndIF]%%
